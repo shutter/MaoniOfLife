@@ -1,0 +1,86 @@
+#include "game_of_life.hpp"
+
+namespace graphics_lab
+{
+
+
+game_of_life::game_of_life( cellular_automaton< simple_cell >& ca )
+    : ca_ruleset( ca )
+{}
+
+
+void
+game_of_life::step()
+{
+    /*
+    Rules:
+
+    Each living cell with one or no neighbors dies, as if by loneliness.
+    Each living cell with four or more neighbors dies, as if by overpopulation.
+    Each living cell with two or three neighbors survives.
+
+    Each empty/dead cell with three neighbors springs to life.
+    */            
+    
+    std::vector< simple_cell* > neighbors;
+    
+    const size_t width  = _ca.get_width();
+    const size_t height = _ca.get_height();
+    
+    for( size_t x = 0; x < width; ++x )
+    {
+        for( size_t y = 0; y < height; ++y )
+        {
+            simple_cell& cell       = _ca.get_cell( x, y );
+            simple_cell& new_cell   = _ca_tmp.get_cell( x, y );
+            
+            #if 1
+            _ca.get_moore_neighborhood( x, y, neighbors );
+            #else
+            _ca.get_von_neumann_neighborhood( x, y, neighbors );
+            #endif
+            
+            size_t living_nbs = 0;
+            std::vector< simple_cell* >::iterator
+                n_it        = neighbors.begin(),
+                n_it_end    = neighbors.end();
+            for( ; n_it != n_it_end; ++n_it )
+            {
+                simple_cell& nb = *(*n_it);
+                if ( nb.is_alive() )
+                    ++living_nbs;
+            }
+            
+            if ( cell.is_alive() )
+            {
+                if ( living_nbs == 2 || living_nbs == 3 )
+                {
+                    new_cell.update( true );
+                }
+                else
+                    new_cell.update( false );
+            }
+            else
+            {
+                if ( living_nbs == 3 )
+                    new_cell.update( true );
+                else
+                    new_cell.update( false );
+            }
+            
+        }
+    }
+    _ca.swap( _ca_tmp );
+}
+
+
+
+void
+game_of_life::reset()
+{
+    _ca.randomize();
+}
+
+
+} // namespace graphics_lab
+

@@ -1,0 +1,277 @@
+#include "exercise.hpp"
+
+namespace graphics_lab
+{
+
+exercise::exercise( size_t width, size_t height )
+    : default_window( "vmml graphics lab 2009", width, height )
+    , _ca( 128, 128 )
+    , _run( true )
+    , _step( false )
+    , _draw_mode( 0 )
+    , _ca_ruleset( 0 )
+    , _game_of_life( 0 )
+    , _simple_1d_ca( 0 )
+    , _ca_update_rate( 1.0 / 24.0 )
+{
+    _setup_mouse();
+    _setup_opengl();
+    _setup_ca();
+ }
+
+
+exercise::~exercise()
+{}
+
+
+void
+exercise::draw()
+{
+    glClear( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
+
+    _camera.get_viewport().apply();
+
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+
+    _draw_background();
+    _draw_points();
+}
+
+
+void
+exercise::on_key_down( unsigned char key )
+{
+    switch( key )
+    {
+        case 'R':
+            _simple_1d_ca->set_random_rule();
+        case 'r':
+            assert( _ca_ruleset );
+            _ca_ruleset->reset();
+            break;
+        case 32:
+            _run = !_run;
+            break;
+        case 's':
+        case 'S':
+            _step = true;
+            break;
+        case 'l':
+        case 'L':
+            if ( _ca_update_rate > 0.0f )
+                _ca_update_rate = 0.0f;
+            else
+                _ca_update_rate = 1.0f / 24.0f;
+            break;
+        case '1':
+            _ca_ruleset = _game_of_life;
+            break;
+        case '2':
+            _ca_ruleset = _simple_1d_ca;
+            break;
+        case '3':
+            _ca_ruleset = _custom_ca;
+            break;
+        case 'n':
+        case 'N':
+            _draw_mode = ++_draw_mode % 2;
+            break;
+        case 'h':
+        case 'H':
+            print_help();
+            break;
+        default:
+            default_window::on_key_down( key );
+    }
+
+}
+
+
+
+void
+exercise::print_help()
+{
+    std::cout << "\nvmml graphics lab 2009 - exercise \n\n";
+    
+    std::cout
+        << "keys:\n"
+        << "SPACE   - play/pause\n"
+        << "s or S  - advance ca a single step when paused\n"
+        << "l or L  - limit update rate to 24fps\n"
+        << "r       - reset ca\n"
+        << "R       - reset ca and randomize rule for 1d ca\n"
+        << "1, 2, 3 - choose ca ruleset\n"
+        << "h or H  - print help\n"
+        << "f or F  - toggle fullscreen mode\n"
+        << std::endl;
+}
+
+
+void
+exercise::_draw_points()
+{
+    vec2f base( -1.0f, -1.0f );
+    vec2f size( 2.0f, 2.0f );
+    
+    const size_t width  = _ca.get_width();
+    const size_t height = _ca.get_height();
+
+    vec2f cell_size = size;
+    cell_size.x() /= width;
+    cell_size.y() /= height;
+  
+    vec2f cell_base = base;
+    cell_base.y() += size.y();
+
+    glPointSize( 2.0f );
+    glBegin( GL_POINTS );
+
+    glColor3f( 1.0f, 1.0f, 1.0f );
+
+        for( size_t y = 0; y < height; ++y )
+        {
+            for( size_t x = 0; x < width; ++x )
+            {
+                const simple_cell& cell = _ca.get_cell( x, y );
+
+                if ( cell.is_alive() )
+                {
+                    if ( _draw_mode != 0 )
+                    {
+                        const float& age = 1.0f - cell.get_age() * 0.5f;
+                        glColor3f( age, age, age );
+                    }
+
+                    glVertex3f( cell_base.x(), cell_base.y(), 0.0f );
+                }
+                cell_base.x() += cell_size.x();
+            }
+            cell_base.x() = base.x();
+            cell_base.y() -= cell_size.y();
+        }
+
+    glEnd();
+
+
+}
+
+
+void
+exercise::_setup_opengl()
+{
+    glEnable( GL_DEPTH_TEST );
+}
+
+
+void
+exercise::_setup_ca()
+{
+    _game_of_life   = new game_of_life( _ca );
+    _simple_1d_ca   = new simple_1d_ca( _ca );
+    _custom_ca      = new custom_ca( _ca );
+    
+    _ca_ruleset        = _game_of_life;
+    
+    _timer.restart();
+}
+
+
+void
+exercise::on_idle()
+{
+    if ( _timer.get_seconds() > _ca_update_rate )
+    {
+        assert( _ca_ruleset );
+        
+        if ( _run )
+            _ca_ruleset->step();
+        else if ( _step )
+        {
+            _step = false;
+            _ca_ruleset->step();
+        }
+        
+        _timer.restart();
+
+        _window.redraw();
+    }
+
+}
+
+
+
+void
+exercise::_draw_background()
+{
+    glBegin( GL_QUADS );
+    
+    glColor3f( 0.24, 0.55f, 0.75 );
+    glVertex3f( -1.1f, -1.1f, 0.01f );
+    glColor3f( 0.24, 0.24, 0.75 );
+    glVertex3f( -1.1f, 1.1f, 0.01f );
+    glColor3f( 0.55f, 0.24, 0.75 );
+    glVertex3f(  1.1f, 1.1f, 0.01f );
+    glColor3f( 0.55f, 0.55f, 0.75 );
+    glVertex3f(  1.1f, -1.1f, 0.01f );
+
+    glColor3f( 1.0f, 1.0f, 1.0f );
+    
+    glEnd();
+}
+
+
+
+void
+exercise::mouse_update( const gloo::mouse_state& mouse_state_ )
+{
+    // left mouse button is pressed
+    if ( mouse_state_.buttons[ 0 ] )
+    {
+        const vec2i& pos = mouse_state_.position;
+        
+        // compute ca-cell from window coordinates
+        float relative_x = pos.x() / static_cast< float >( _camera.get_width() );
+        float relative_y = pos.y() / static_cast< float >( _camera.get_height() );
+        
+        const size_t ca_width   = _ca.get_width();
+        const size_t ca_height  = _ca.get_height();
+        
+        relative_x *= ca_width;
+        relative_y *= ca_height;
+
+        size_t ca_x = static_cast< size_t >( relative_x ) % ca_width;
+        size_t ca_y = static_cast< size_t >( relative_y ) % ca_height;
+
+        // collect cell and its neighborhood
+        std::vector< simple_cell* > cells;
+        cells.push_back( &_ca.get_cell( ca_x, ca_y ) );
+        _ca.get_moore_neighborhood( ca_x, ca_y, cells );
+        
+        // create life under mouse-pointer
+        std::vector< simple_cell* >::iterator
+            it      = cells.begin(),
+            it_end  = cells.end();
+        for( ; it != it_end; ++it )
+        {
+            simple_cell& cell = **it;
+            cell.update( true );
+        }
+
+    }
+}
+
+
+
+void
+exercise::_setup_mouse()
+{
+    gloo::glut_window::remove_mouse_target( &_mouse_motion );
+    gloo::glut_window::add_mouse_target( this );
+}
+
+
+} // namespace graphics_lab
+

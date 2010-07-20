@@ -1,0 +1,20 @@
+#ifndef __GRAPHICS_LAB__VMML_INCLUDES__HPP__
+#define __GRAPHICS_LAB__VMML_INCLUDES__HPP__
+
+#include <gloo/vmmlib_includes.hpp>
+#include <gloo/opengl_includes.hpp>
+
+namespace graphics_lab
+{
+
+typedef gloo::vec2f vec2f;
+typedef gloo::vec2i vec2i;
+
+typedef gloo::vec3f vec3f;
+
+
+
+} // namespace graphics_lab
+
+#endif
+

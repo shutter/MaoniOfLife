@@ -1,0 +1,13 @@
+
+#include <gloo/glut_window.hpp>
+#include "exercise.hpp"
+
+int
+main( int argc, const char** argv )
+{
+    size_t width    = 400;
+    size_t height   = 400;
+
+    graphics_lab::exercise e( width, height );
+    e.start();
+}

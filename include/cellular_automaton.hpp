@@ -1,0 +1,315 @@
+#ifndef __GRAPHICS_LAB__CELLULAR_AUTOMATON__HPP__
+#define __GRAPHICS_LAB__CELLULAR_AUTOMATON__HPP__
+
+#include <assert.h>
+#include <vector>
+
+namespace graphics_lab
+{
+
+template< typename cell_t >
+class cellular_automaton : private std::vector< cell_t >
+{
+public:
+    cellular_automaton();
+    cellular_automaton( size_t width, size_t height );
+    ~cellular_automaton();
+    
+    inline cell_t& get_cell( size_t x, size_t y );
+    inline const cell_t& get_cell( size_t x, size_t y ) const;
+
+    void get_von_neumann_neighborhood( size_t x, size_t y, 
+        typename std::vector< cell_t* >& nbs );
+        
+    void get_moore_neighborhood( size_t x, size_t y, 
+        typename std::vector< cell_t* >& nbs );
+
+    // size = 1 -> left and right nb, size = 2 -> the two left, two right...
+    void get_1d_neighborhood( size_t x, size_t y, size_t size, 
+        typename std::vector< cell_t* >& nbs );
+        
+    const size_t get_width() const;
+    const size_t get_height() const;
+    
+    void randomize();
+    
+    void swap( cellular_automaton& other );
+
+    using std::vector< cell_t >::size;
+    using std::vector< cell_t >::empty;
+
+    
+    // iterator
+    using std::vector< cell_t >::iterator;
+    using std::vector< cell_t >::const_iterator;
+    using std::vector< cell_t >::begin;
+    using std::vector< cell_t >::end;
+        
+protected:
+    void _setup();
+
+    size_t  _width;     // x
+    size_t  _height;    // y
+    
+}; // class cellular_automaton
+
+
+template< typename cell_t >
+cellular_automaton< cell_t >::cellular_automaton()
+    : _width( 128 )
+    , _height( 128 )
+{
+    _setup();
+}
+
+
+template< typename cell_t >
+cellular_automaton< cell_t >::cellular_automaton( size_t width, size_t height )
+    : _width( width )
+    , _height( height )
+{
+    _setup();
+}
+
+
+template< typename cell_t >
+cellular_automaton< cell_t >::~cellular_automaton()
+{
+}
+
+
+template< typename cell_t >
+void
+cellular_automaton< cell_t >::
+get_von_neumann_neighborhood( size_t x, size_t y, 
+    typename std::vector< cell_t* >& nbs )
+{
+
+    assert( x < _width );
+    assert( y < _height );
+
+    nbs.clear();
+
+    const size_t cell_index = y * _width + x;
+    const size_t cell_count = std::vector< cell_t >::size();
+    const size_t x_max      = _width - 1;
+    const size_t y_max      = _height - 1;
+    
+    size_t top, left, right, bottom;
+    
+    // toroid boundaries
+    if ( y == 0 )
+        top = cell_index + cell_count - _width;
+    else
+        top = cell_index - _width;
+    
+    if ( x == 0 )
+        left = cell_index + _width - 1;
+    else
+        left = cell_index - 1;
+    
+    if ( x == x_max )
+        right = cell_index + 1 - _width;
+    else
+        right = cell_index + 1;
+    
+    if ( y == y_max )
+        bottom = x;
+    else
+        bottom = cell_index + _width;
+       
+    nbs.push_back( &std::vector< cell_t >::at( top ) );
+    nbs.push_back( &std::vector< cell_t >::at( left ) );
+    nbs.push_back( &std::vector< cell_t >::at( right ) );
+    nbs.push_back( &std::vector< cell_t >::at( bottom ) );
+    
+}
+
+
+
+template< typename cell_t >
+void
+cellular_automaton< cell_t >::
+get_moore_neighborhood( size_t x, size_t y, 
+    typename std::vector< cell_t* >& nbs )
+{
+
+    assert( x < _width );
+    assert( y < _height );
+
+    nbs.clear();
+
+    const size_t cell_index = y * _width + x;
+    const size_t cell_count = std::vector< cell_t >::size();
+    const size_t x_max      = _width - 1;
+    const size_t y_max      = _height - 1;
+    
+    size_t top_left, top, top_right, left, right, bottom_left, bottom, bottom_right;
+    
+    top_left        = cell_index - _width - 1;
+    top             = cell_index - _width;
+    top_right       = cell_index - _width + 1;
+    
+    left            = cell_index - 1;
+    right           = cell_index + 1;
+    
+    bottom_left     = cell_index + _width - 1;
+    bottom          = cell_index + _width;
+    bottom_right    = cell_index + _width + 1;
+    
+    if ( y == 0 )
+    {
+        top_left    += cell_count;
+        top         += cell_count;
+        top_right   += cell_count;
+    }
+    
+    if ( y == y_max )
+    {
+        bottom_left     -= cell_count;
+        bottom          -= cell_count;
+        bottom_right    -= cell_count;
+    }
+    
+    if ( x == 0 )
+    {
+        top_left    += _width;
+        left        += _width;
+        bottom_left += _width;
+    }
+
+    if ( x == x_max )
+    {
+        top_right    -= _width;
+        right        -= _width;
+        bottom_right -= _width;
+    }
+    
+    nbs.push_back( &std::vector< cell_t >::at( top_left ) );
+    nbs.push_back( &std::vector< cell_t >::at( top ) );
+    nbs.push_back( &std::vector< cell_t >::at( top_right ) );
+    nbs.push_back( &std::vector< cell_t >::at( left ) );
+    nbs.push_back( &std::vector< cell_t >::at( right ) );
+    nbs.push_back( &std::vector< cell_t >::at( bottom_left ) );
+    nbs.push_back( &std::vector< cell_t >::at( bottom ) );
+    nbs.push_back( &std::vector< cell_t >::at( bottom_right ) );
+}
+
+
+
+template< typename cell_t >
+void 
+cellular_automaton< cell_t >::get_1d_neighborhood( size_t x, size_t y,
+    size_t size, typename std::vector< cell_t* >& nbs )
+{
+    nbs.clear();
+
+    size_t left, right;
+    const size_t cell_index = y * _width + x;
+    
+    const size_t x_max = _width - 1;
+    
+    for( size_t index = 1; index <= size; ++index )
+    {
+        left    = cell_index - size;
+        right   = cell_index + size;
+        
+        if ( size > x )
+            left += _width;
+        if ( x + size > x_max )
+        {
+            right -= _width;
+        }
+        nbs.push_back( &std::vector< cell_t >::at( left ) );
+        nbs.push_back( &std::vector< cell_t >::at( right ) );
+        
+    }
+
+}
+
+
+
+template< typename cell_t >
+inline cell_t&
+cellular_automaton< cell_t >::get_cell( size_t x, size_t y )
+{
+    assert( x < _width );
+    assert( y < _height );
+
+    return std::vector< cell_t >::at( y * _width + x );
+}
+
+
+
+template< typename cell_t >
+inline const cell_t&
+cellular_automaton< cell_t >::get_cell( size_t x, size_t y ) const
+{
+    assert( x < _width );
+    assert( y < _height );
+
+    return std::vector< cell_t >::at( y * _width + x );
+}
+
+
+
+template< typename cell_t >
+void
+cellular_automaton< cell_t >::_setup()
+{
+    size_t cell_count = _width * _height;
+    std::vector< cell_t >::resize( cell_count );
+    
+    randomize();
+}
+
+
+
+template< typename cell_t >
+const size_t
+cellular_automaton< cell_t >::get_width() const
+{
+    return _width;
+}
+
+
+
+template< typename cell_t >
+const size_t
+cellular_automaton< cell_t >::get_height() const
+{
+    return _height;
+}
+
+
+template< typename cell_t >
+void
+cellular_automaton< cell_t >::randomize()
+{
+    typename std::vector< cell_t >::iterator it = begin(), it_end = end();
+    for( ; it != it_end; ++it )
+    {
+        (*it).randomize();
+    }
+}
+
+
+
+template< typename cell_t >
+void
+cellular_automaton< cell_t >::swap( cellular_automaton& other_ca )
+{
+    std::vector< cell_t >::swap( other_ca );
+    
+    std::swap( _width, other_ca._width );
+    std::swap( _height, other_ca._height );
+    
+}
+
+
+
+
+} // namespace graphics_lab
+
+#endif
+

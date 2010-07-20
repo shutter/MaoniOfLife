@@ -1,0 +1,31 @@
+#ifndef __GRAPHICS_LAB__SIMPLE_1D_CA__HPP__
+#define __GRAPHICS_LAB__SIMPLE_1D_CA__HPP__
+
+#include "ca_ruleset.hpp"
+
+namespace graphics_lab
+{
+
+class simple_1d_ca : public ca_ruleset
+{
+public: 
+    simple_1d_ca( cellular_automaton< simple_cell >& ca );
+
+    virtual void step();
+    virtual void reset();
+
+    void set_rule( const uint8_t rule );
+    const size_t get_rule() const;
+    
+    void set_random_rule();
+
+protected:
+    size_t  _current_row;
+    size_t  _rule;
+
+}; // class simple_1d_ca
+
+} // namespace graphics_lab
+
+#endif
+

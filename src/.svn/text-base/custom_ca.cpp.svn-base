@@ -1,0 +1,28 @@
+#include "custom_ca.hpp"
+
+namespace graphics_lab
+{
+
+
+custom_ca::custom_ca( cellular_automaton< simple_cell >& ca )
+    : ca_ruleset( ca )
+{}
+
+
+
+void
+custom_ca::step()
+{
+    _ca.randomize();
+}
+
+
+void
+custom_ca::reset()
+{
+    _ca.randomize();
+}
+
+
+} // namespace graphics_lab
+
