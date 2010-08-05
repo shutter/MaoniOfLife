@@ -32,4 +32,4 @@ add_executable(MaoniOfLife
   src/simple_cell.cpp
   )
   
-target_link_libraries(MaoniOfLife ${Maoni_LIBRARIES})
+target_link_libraries(MaoniOfLife ${Maoni_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES})
